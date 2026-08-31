@@ -15,29 +15,41 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-bot.onText(/\/cloud/, (msg) => {
-  const chatId = msg.chat.id;
-
-  bot.sendMessage(chatId, "cloud", {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "☁️",
-            callback_data: "cloud_clicked",
-          },
-        ],
+const cloudButton = {
+  reply_markup: {
+    inline_keyboard: [
+      [
+        {
+          text: "☁️",
+          url: "https://t.me/N0t_Cloudy",
+        },
       ],
-    },
-  });
+    ],
+  },
+};
+
+// وقتی پیام متنی /cloud تنها فرستاده بشه (بدون فایل)
+bot.onText(/^\/cloud$/, (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, "cloud", cloudButton);
 });
 
-bot.on("callback_query", (query) => {
-  const chatId = query.message.chat.id;
+// وقتی آهنگ/فایل صوتی با کپشن /cloud فرستاده بشه
+bot.on("message", (msg) => {
+  const caption = msg.caption || "";
+  if (!caption.startsWith("/cloud")) return;
 
-  if (query.data === "cloud_clicked") {
-    bot.answerCallbackQuery(query.id, { text: "☁️" });
-    bot.sendMessage(chatId, "ابرت جواب داد ☁️");
+  const chatId = msg.chat.id;
+
+  if (msg.audio) {
+    bot.sendAudio(chatId, msg.audio.file_id, {
+      caption: msg.audio.title || "cloud",
+      ...cloudButton,
+    });
+  } else if (msg.voice) {
+    bot.sendVoice(chatId, msg.voice.file_id, cloudButton);
+  } else if (msg.document) {
+    bot.sendDocument(chatId, msg.document.file_id, cloudButton);
   }
 });
 
