@@ -1,130 +1,169 @@
-// ===============================
-// Telegram Bot
-// Inline Keyboard
-// Ready for Railway
-// ===============================
+const { Bot } = require("node-telegram-bot-api");
 
-const TelegramBot = require("node-telegram-bot-api");
+// ==========================================
+// Configuration
+// ==========================================
 
-// دریافت توکن از Railway Variables
 const TOKEN = process.env.BOT_TOKEN;
 
 if (!TOKEN) {
-  console.error("❌ خطا: BOT_TOKEN تنظیم نشده است.");
-  console.error("در Railway از بخش Variables مقدار BOT_TOKEN را اضافه کن.");
-  process.exit(1);
+console.error("❌ BOT_TOKEN is not set.");
+process.exit(1);
 }
 
-// ساخت بات
-const bot = new TelegramBot(TOKEN, {
-  polling: true
-});
+// ==========================================
+// Create Bot
+// ==========================================
 
-// ===============================
+const bot = new Bot(TOKEN);
+
+// ==========================================
 // Cloud Button
-// ===============================
+// ==========================================
 
-const cloudButton = {
-  reply_markup: {
-    inline_keyboard: [
-      [
-        {
-          text: "☁️",
-          url: "https://t.me/N0t_Cloudy"
-        }
-      ]
-    ]
-  }
+const cloudKeyboard = {
+inline_keyboard: [
+[
+{
+text: "☁️",
+url: "https://t.me/N0t_Cloudy"
+}
+]
+]
 };
 
-// ===============================
+// ==========================================
 // /cloud command
-// ===============================
+// ==========================================
 
-bot.onText(/^\/cloud$/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  try {
-    await bot.sendMessage(
-      chatId,
-      "cloud",
-      cloudButton
-    );
-  } catch (error) {
-    console.error("❌ خطا در ارسال پیام:", error.message);
-  }
+bot.command("cloud", async (ctx) => {
+try {
+await ctx.reply("cloud", {
+reply_markup: cloudKeyboard
+});
+} catch (error) {
+console.error("❌ Error sending /cloud:", error);
+}
 });
 
-// ===============================
-// Files with /cloud caption
-// ===============================
+// ==========================================
+// Audio / Voice / Document
+// with /cloud caption
+// ==========================================
 
-bot.on("message", async (msg) => {
-  const caption = msg.caption || "";
+bot.on("message", async (ctx) => {
+const message = ctx.message;
 
-  // اگر کپشن با /cloud شروع نشده، کاری نکن
-  if (!caption.startsWith("/cloud")) {
-    return;
-  }
+if (!message) return;
 
-  const chatId = msg.chat.id;
+const caption = message.caption || "";
 
-  try {
+if (!caption.startsWith("/cloud")) {
+return;
+}
 
-    // 🎵 Audio
-    if (msg.audio) {
-      await bot.sendAudio(
-        chatId,
-        msg.audio.file_id,
-        {
-          caption: msg.audio.title || "cloud",
-          ...cloudButton
-        }
-      );
-    }
+try {
+// ======================================
+// 🎵 Audio
+// ======================================
 
-    // 🎙 Voice
-    else if (msg.voice) {
-      await bot.sendVoice(
-        chatId,
-        msg.voice.file_id,
-        cloudButton
-      );
-    }
+if (message.audio) {
+  await ctx.api.sendAudio({
+    chat_id: message.chat.id,
+    audio: message.audio.file_id,
+    caption: message.audio.title || "cloud",
+    reply_markup: cloudKeyboard
+  });
 
-    // 📄 Document
-    else if (msg.document) {
-      await bot.sendDocument(
-        chatId,
-        msg.document.file_id,
-        cloudButton
-      );
-    }
+  return;
+}
 
-  } catch (error) {
-    console.error(
-      "❌ خطا در ارسال فایل:",
-      error.message
-    );
-  }
+// ======================================
+// 🎙 Voice
+// ======================================
+
+if (message.voice) {
+  await ctx.api.sendVoice({
+    chat_id: message.chat.id,
+    voice: message.voice.file_id,
+    reply_markup: cloudKeyboard
+  });
+
+  return;
+}
+
+// ======================================
+// 📁 Document
+// ======================================
+
+if (message.document) {
+  await ctx.api.sendDocument({
+    chat_id: message.chat.id,
+    document: message.document.file_id,
+    reply_markup: cloudKeyboard
+  });
+
+  return;
+}
+
+} catch (error) {
+console.error("❌ Error sending media:", error);
+}
 });
 
-// ===============================
-// Polling errors
-// ===============================
+// ==========================================
+// Error Handler
+// ==========================================
 
-bot.on("polling_error", (error) => {
-  console.error(
-    "❌ Telegram Polling Error:",
-    error.message
-  );
+bot.catch((error, ctx) => {
+console.error("❌ Bot error:", error);
 });
 
-// ===============================
-// Ready
-// ===============================
+// ==========================================
+// Start Polling
+// ==========================================
 
-console.log("=================================");
-console.log("🤖 Telegram Bot Started");
-console.log("☁️ Cloud command is ready");
-console.log("=================================");
+async function start() {
+try {
+console.log("🚀 Starting Telegram bot...");
+
+await bot.startPolling();
+
+console.log("✅ Bot is running.");
+console.log("☁️ Cloud bot is ready.");
+
+} catch (error) {
+console.error("❌ Failed to start bot:", error);
+process.exit(1);
+}
+}
+
+start();
+
+// ==========================================
+// Graceful Shutdown
+// ==========================================
+
+process.once("SIGINT", async () => {
+console.log("🛑 SIGINT received. Stopping bot...");
+
+try {
+await bot.stopPolling();
+} catch (error) {
+console.error(error);
+}
+
+process.exit(0);
+});
+
+process.once("SIGTERM", async () => {
+console.log("🛑 SIGTERM received. Stopping bot...");
+
+try {
+await bot.stopPolling();
+} catch (error) {
+console.error(error);
+}
+
+process.exit(0);
+});
