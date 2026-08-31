@@ -1,15 +1,15 @@
 {
-"name": "telegram-cloud-bot",
-"version": "1.0.0",
-"description": "Telegram Cloud Bot",
-"main": "index.js",
-"scripts": {
-"start": "node index.js"
-},
-"engines": {
-"node": ">=18"
-},
-"dependencies": {
-"node-telegram-bot-api": "2.1.0"
-}
+  "name": "telegram-bot",
+  "version": "2.1.0",
+  "description": "Telegram Bot powered by node-telegram-bot-api v2.1.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "2.1.0"
+  }
 }
