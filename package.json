@@ -1,7 +1,7 @@
 {
   "name": "telegram-bot",
-  "version": "2.1.0",
-  "description": "Telegram Bot powered by node-telegram-bot-api v2.1.0",
+  "version": "1.0.0",
+  "description": "Telegram Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -10,6 +10,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "node-telegram-bot-api": "2.1.0"
+    "node-telegram-bot-api": "1.2.0"
   }
 }
