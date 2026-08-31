@@ -1,46 +1,49 @@
 'use strict';
 
-const { Bot } = require('node-telegram-bot-api');
-const { run } = require('node-telegram-bot-api/node');
+const TelegramBot = require('node-telegram-bot-api');
 
-// ========================================
+// ===============================
 // CONFIG
-// ========================================
+// ===============================
 
-const TOKEN =
-    process.env.BOT_TOKEN ||
-    process.env.TELEGRAM_BOT_TOKEN;
+const TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
 if (!TOKEN) {
     console.error('❌ BOT_TOKEN در Environment Variables تنظیم نشده.');
     process.exit(1);
 }
 
-// ========================================
+// ===============================
 // BOT
-// ========================================
+// ===============================
 
-const bot = new Bot(TOKEN);
+const bot = new TelegramBot(TOKEN, {
+    polling: true
+});
 
-// ========================================
-// START COMMAND
-// ========================================
+// ===============================
+// ERROR HANDLING
+// ===============================
 
-bot.command('start', async (ctx) => {
+bot.on('polling_error', (error) => {
+    console.error('❌ Telegram Polling Error:', error.message);
+});
+
+bot.on('error', (error) => {
+    console.error('❌ Telegram Bot Error:', error.message);
+});
+
+// ===============================
+// /start
+// ===============================
+
+bot.onText(/^\/start$/, async (msg) => {
+    const chatId = msg.chat.id;
+
     try {
-        const firstName =
-            ctx.from?.first_name ||
-            'دوست من';
-
-        await ctx.reply(
-`سلام ${firstName} 👋
-
-🤖 ربات با موفقیت فعال شد.
-
-دستورهای موجود:
-
-/start - شروع ربات
-/help - راهنما`,
+        await bot.sendMessage(
+            chatId,
+            `سلام ${msg.from.first_name || 'دوست من'} 👋\n\nربات با موفقیت فعال شد.\n\nدستورهای موجود:\n\n/start - شروع ربات\n/help - راهنما`,
             {
                 reply_markup: {
                     inline_keyboard: [
@@ -55,100 +58,56 @@ bot.command('start', async (ctx) => {
             }
         );
     } catch (error) {
-        console.error('❌ /start error:', error);
+        console.error('❌ Send message error:', error.message);
     }
 });
 
-// ========================================
-// HELP COMMAND
-// ========================================
+// ===============================
+// /help
+// ===============================
 
-bot.command('help', async (ctx) => {
+bot.onText(/^\/help$/, async (msg) => {
+    const chatId = msg.chat.id;
+
     try {
-        await ctx.reply(
-`📖 راهنمای ربات
-
-دستورهای قابل استفاده:
-
-/start
-شروع ربات
-
-/help
-نمایش راهنما`
+        await bot.sendMessage(
+            chatId,
+            `📖 راهنمای ربات\n\nدستورهای قابل استفاده:\n\n/start - شروع ربات\n/help - نمایش راهنما`
         );
     } catch (error) {
-        console.error('❌ /help error:', error);
+        console.error('❌ Send message error:', error.message);
     }
 });
 
-// ========================================
-// CALLBACK BUTTONS
-// ========================================
+// ===============================
+// BUTTONS
+// ===============================
 
-bot.on('callback_query', async (ctx) => {
+bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const data = query.data;
+
     try {
-        const data = ctx.callbackQuery?.data;
-
         if (data === 'help') {
-            await ctx.answerCallbackQuery();
+            await bot.answerCallbackQuery(query.id);
 
-            await ctx.reply(
-`📖 راهنما
-
-ربات شما آماده دریافت دستور است.
-
-برای شروع:
-
-/start`
+            await bot.sendMessage(
+                chatId,
+                `📖 راهنما\n\nربات شما آماده دریافت دستور است.\n\nبرای شروع:\n/start`
             );
         }
     } catch (error) {
-        console.error('❌ Callback error:', error);
+        console.error('❌ Callback error:', error.message);
     }
 });
 
-// ========================================
-// NORMAL MESSAGES
-// ========================================
-
-bot.on('message', async (ctx) => {
-    try {
-        const text = ctx.message?.text;
-
-        // Commandها توسط bot.command مدیریت می‌شوند.
-        if (!text || text.startsWith('/')) {
-            return;
-        }
-
-        // فعلاً پاسخی برای پیام‌های معمولی نمی‌دهیم.
-        // منطق اصلی ربات را می‌توانی اینجا اضافه کنی.
-
-    } catch (error) {
-        console.error('❌ Message error:', error);
-    }
-});
-
-// ========================================
-// ERROR HANDLING
-// ========================================
-
-bot.catch((error) => {
-    console.error('❌ Telegram Bot Error:');
-    console.error(error);
-});
-
-// ========================================
-// START BOT
-// ========================================
+// ===============================
+// READY
+// ===============================
 
 (async () => {
     try {
-        console.log('================================');
-        console.log('🚀 Starting Telegram Bot...');
-        console.log('Node.js:', process.version);
-        console.log('================================');
-
-        const me = await bot.api.getMe();
+        const me = await bot.getMe();
 
         console.log('================================');
         console.log('🤖 Telegram Bot Started');
@@ -156,35 +115,23 @@ bot.catch((error) => {
         console.log(`Name: ${me.first_name}`);
         console.log('Node.js:', process.version);
         console.log('================================');
-
-        // شروع polling
-        await run(bot);
-
     } catch (error) {
-        console.error('================================');
-        console.error('❌ Could not start Telegram Bot');
-        console.error(error?.message || error);
-        console.error('================================');
-
+        console.error('❌ Could not connect to Telegram:', error.message);
         process.exit(1);
     }
 })();
 
-// ========================================
+// ===============================
 // GRACEFUL SHUTDOWN
-// ========================================
+// ===============================
 
 const shutdown = async (signal) => {
-    console.log(`\n🛑 ${signal} received.`);
+    console.log(`\n🛑 ${signal} received. Stopping bot...`);
 
     try {
-        await bot.stop();
-        console.log('✅ Bot stopped successfully.');
+        await bot.stopPolling();
     } catch (error) {
-        console.error(
-            '❌ Error while stopping bot:',
-            error?.message || error
-        );
+        console.error('Stop polling error:', error.message);
     }
 
     process.exit(0);
@@ -193,16 +140,14 @@ const shutdown = async (signal) => {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-// ========================================
+// ===============================
 // UNHANDLED ERRORS
-// ========================================
+// ===============================
 
 process.on('unhandledRejection', (reason) => {
-    console.error('❌ Unhandled Rejection:');
-    console.error(reason);
+    console.error('❌ Unhandled Rejection:', reason);
 });
 
 process.on('uncaughtException', (error) => {
-    console.error('❌ Uncaught Exception:');
-    console.error(error);
+    console.error('❌ Uncaught Exception:', error.message);
 });
