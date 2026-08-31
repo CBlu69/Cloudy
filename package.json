@@ -1,22 +1,15 @@
 {
-  "name": "telegram-bot",
-  "version": "1.0.0",
-  "description": "Telegram bot with inline keyboard",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "keywords": [
-    "telegram",
-    "bot",
-    "nodejs"
-  ],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "node-telegram-bot-api": "^0.66.0"
-  },
-  "engines": {
-    "node": ">=18"
-  }
+"name": "telegram-cloud-bot",
+"version": "1.0.0",
+"description": "Telegram Cloud Bot",
+"main": "index.js",
+"scripts": {
+"start": "node index.js"
+},
+"engines": {
+"node": ">=18"
+},
+"dependencies": {
+"node-telegram-bot-api": "2.1.0"
+}
 }
